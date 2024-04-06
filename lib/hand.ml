@@ -7,7 +7,7 @@ type t =
   | TwoPair of Rank.t * Rank.t * int
   | ThreeOfAKind of Rank.t
   | Straight of Rank.t
-  | Flush of Suit.t
+  | Flush of Suit.t * int
   | FullHouse of Rank.t * Rank.t
   | FourOfAKind of Rank.t
   | StraightFlush of Rank.t
@@ -36,8 +36,7 @@ let three_of_a_kind t =
     ThreeOfAKind (Rank.of_int_exn x))
 
 let flush t =
-  (* Should flush return Suit? *)
-  Option.(Cardsummary.has_5_same_suit t >>| fun x -> Flush x)
+  Option.(Cardsummary.has_5_same_suit t >>| (fun (a_suit, a_bitmap) -> Flush (a_suit, (Cardsummary.top_bits ~n:5 a_bitmap))))
 
 let full_house t =
   let open Option in
@@ -46,20 +45,17 @@ let full_house t =
   FullHouse (Rank.of_int_exn trip_rank, Rank.of_int_exn x)
 
 let straight (t : Cardsummary.t) =
-  (* `straight` IS BUGGY FOR SURE. SOMETHING DOES NOT TRANSLATE WELL.
-     PROBABLY SELECT HIGH CARD SEPARATELY? *)
   let open Option in
   Array.findi Cardsummary.straight_bitmaps ~f:(fun _ straight_bitmap ->
       Int.( land ) t.rank_bitmap straight_bitmap |> Int.equal straight_bitmap)
   >>| fun (index, _) ->
   match 12 - index with
-  (* | 3 -> Straight (Rank.of_int_exn 12) *)
   | _ -> Straight (Rank.of_int_exn (12 - index))
 
 let straight_flush (t : Cardsummary.t) =
   let has_flush = flush t in
   match has_flush with
-  | Some (Flush suit) -> (
+  | Some (Flush (suit, _)) -> (
       let crds =
         List.filter
           ~f:(fun (csuit, _) -> Suit.compare csuit suit |> Int.equal 0)
@@ -269,7 +265,7 @@ let compare_variants a b =
       | x -> x)
   | ThreeOfAKind x, ThreeOfAKind y -> Rank.compare x y
   | Straight x, Straight y -> Rank.compare x y
-  | Flush x, Flush y -> Suit.compare x y
+  | Flush (_, x2), Flush (_, y2) -> Int.compare x2 y2
   | FullHouse (x1, x2), FullHouse (y1, y2) -> (
       match Rank.compare x1 y1 with 0 -> Rank.compare x2 y2 | x -> x)
   | FourOfAKind x, FourOfAKind y -> Rank.compare x y

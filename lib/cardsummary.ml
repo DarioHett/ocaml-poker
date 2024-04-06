@@ -52,7 +52,7 @@ let has_5_same_suit t =
   Array.find_mapi
     ~f:(fun i x ->
       match Int.popcount x |> Int.( <= ) 5 with
-      | true -> Suit.of_int i
+      | true -> Some ((Suit.of_int_exn i), x)
       | false -> None)
     t.suit_rank_bitmaps
 
