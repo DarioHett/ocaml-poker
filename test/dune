@@ -1,0 +1,6 @@
+(library
+ (name ocaml_poker_test)
+ (inline_tests)
+ (libraries core ocaml_poker)
+ (preprocess
+  (pps ppx_inline_test ppx_expect ppx_jane)))
